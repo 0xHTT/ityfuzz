@@ -333,6 +333,29 @@ where
                     vec![*ty]
                 )
             }
+            
+            Type::StructInstantiation(_, tys) => {
+                let types = tys.clone();
+                let mut values= vec![];
+                for ty in tys {
+                    let default_val = Self::gen_default_value(state, Box::new(ty));
+                    match default_val {
+                        MoveInputStatus::Complete(Value(inner)) => {
+                            values.push(inner);
+                        }
+                        MoveInputStatus::DependentOnStructs(_, _) => {
+                            return default_val;
+                        }
+                    }
+                }
+                MoveInputStatus::DependentOnStructs(
+                    Value(ValueImpl::Container(
+                        Container::Struct(Rc::new(RefCell::new(values)))
+                    )),
+                    types
+                )
+            }
+
             Type::Reference(ty) => {
                 let default_inner = Self::gen_default_value(state, ty);
                 if let MoveInputStatus::Complete(Value(inner)) = default_inner {
